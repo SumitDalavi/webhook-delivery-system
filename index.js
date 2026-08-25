@@ -33,4 +33,7 @@ const worker = new Worker('webhooks', async job => {
     }
 }, { connection });
 
-app.listen(3000, () => console.log('Webhook emitter on 3000'));
+if (require.main === module) {
+    app.listen(3000, () => console.log('Webhook emitter on 3000'));
+}
+module.exports = { app, webhookQueue, worker, connection };
