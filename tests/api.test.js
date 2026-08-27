@@ -1,14 +1,15 @@
 const request = require('supertest');
 
-// Mock BullMQ completely because it requires real Redis for Lua scripts
+let workerCallback;
 jest.mock('bullmq', () => {
     return {
         Queue: jest.fn().mockImplementation(() => ({
             add: jest.fn().mockResolvedValue(true)
         })),
-        Worker: jest.fn().mockImplementation(() => ({
-            close: jest.fn()
-        }))
+        Worker: jest.fn().mockImplementation((name, cb, opts) => {
+            workerCallback = cb;
+            return { close: jest.fn() };
+        })
     };
 });
 jest.mock('ioredis', () => require('ioredis-mock'));
@@ -37,5 +38,44 @@ describe('Webhook Delivery System', () => {
             secret: 'my-secret',
             payload: { event: 'ping' }
         }, expect.any(Object));
+    });
+
+    it('should process job and make axios call', async () => {
+        const axios = require('axios');
+        axios.post = jest.fn().mockResolvedValue({ status: 200 });
+
+        const job = {
+            data: {
+                endpoint: 'https://example.com/webhook',
+                secret: 'my-secret',
+                payload: { event: 'ping' }
+            }
+        };
+
+        await workerCallback(job);
+        
+        expect(axios.post).toHaveBeenCalledWith(
+            'https://example.com/webhook',
+            JSON.stringify({ event: 'ping' }),
+            expect.objectContaining({
+                headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+                timeout: 5000
+            })
+        );
+    });
+
+    it('should throw error on axios failure', async () => {
+        const axios = require('axios');
+        axios.post = jest.fn().mockRejectedValue(new Error('Network Error'));
+
+        const job = {
+            data: {
+                endpoint: 'https://example.com/webhook',
+                secret: 'my-secret',
+                payload: { event: 'ping' }
+            }
+        };
+
+        await expect(workerCallback(job)).rejects.toThrow('Delivery failed: Network Error');
     });
 });
