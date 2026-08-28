@@ -1,81 +1,111 @@
 const request = require('supertest');
-
-let workerCallback;
-jest.mock('bullmq', () => {
-    return {
-        Queue: jest.fn().mockImplementation(() => ({
-            add: jest.fn().mockResolvedValue(true)
-        })),
-        Worker: jest.fn().mockImplementation((name, cb, opts) => {
-            workerCallback = cb;
-            return { close: jest.fn() };
-        })
-    };
-});
-jest.mock('ioredis', () => require('ioredis-mock'));
-
-const { app, webhookQueue, worker, connection } = require('../index');
+const http = require('http');
+const { app, initDb, getDb, processWebhooks } = require('../index');
 
 describe('Webhook Delivery System', () => {
-    afterAll(async () => {
-        await worker.close();
-        await connection.quit();
-    });
+    let server;
+    let baseUrl;
 
-    it('should enqueue a webhook delivery', async () => {
-        const res = await request(app)
-            .post('/emit')
-            .send({
-                endpoint: 'https://example.com/webhook',
-                secret: 'my-secret',
-                payload: { event: 'ping' }
-            });
-
-        expect(res.statusCode).toEqual(200);
-        expect(res.body.status).toEqual('queued');
-        expect(webhookQueue.add).toHaveBeenCalledWith('deliver', {
-            endpoint: 'https://example.com/webhook',
-            secret: 'my-secret',
-            payload: { event: 'ping' }
-        }, expect.any(Object));
-    });
-
-    it('should process job and make axios call', async () => {
-        const axios = require('axios');
-        axios.post = jest.fn().mockResolvedValue({ status: 200 });
-
-        const job = {
-            data: {
-                endpoint: 'https://example.com/webhook',
-                secret: 'my-secret',
-                payload: { event: 'ping' }
-            }
-        };
-
-        await workerCallback(job);
+    beforeAll(async () => {
+        await initDb(':memory:');
+        server = http.createServer(app);
         
-        expect(axios.post).toHaveBeenCalledWith(
-            'https://example.com/webhook',
-            JSON.stringify({ event: 'ping' }),
-            expect.objectContaining({
-                headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
-                timeout: 5000
-            })
-        );
+        await new Promise(resolve => {
+            server.listen(0, () => {
+                baseUrl = `http://localhost:${server.address().port}`;
+                resolve();
+            });
+        });
     });
 
-    it('should throw error on axios failure', async () => {
-        const axios = require('axios');
-        axios.post = jest.fn().mockRejectedValue(new Error('Network Error'));
+    afterAll((done) => {
+        server.close(done);
+    });
 
-        const job = {
-            data: {
-                endpoint: 'https://example.com/webhook',
-                secret: 'my-secret',
-                payload: { event: 'ping' }
-            }
+    beforeEach(async () => {
+        const db = getDb();
+        await db.run('DELETE FROM webhooks');
+    });
+
+    it('should queue and deliver a webhook successfully', async () => {
+        const id = 'hook-1';
+        const res = await request(app).post('/emit').send({
+            id,
+            endpoint: `${baseUrl}/mock-receiver`,
+            secret: 'test-secret',
+            payload: { message: 'hello' }
+        });
+
+        expect(res.statusCode).toBe(201);
+        expect(res.body.status).toBe('queued');
+
+        // Manually trigger the processor
+        await processWebhooks();
+
+        const statusRes = await request(app).get(`/status/${id}`);
+        expect(statusRes.body.status).toBe('delivered');
+        expect(statusRes.body.attempts).toBe(0);
+    });
+
+    it('should strictly handle duplicate submissions idempotently', async () => {
+        const payload = {
+            id: 'hook-dupe',
+            endpoint: `${baseUrl}/mock-receiver`,
+            secret: 'test-secret',
+            payload: { message: 'hello' }
         };
 
-        await expect(workerCallback(job)).rejects.toThrow('Delivery failed: Network Error');
+        const res1 = await request(app).post('/emit').send(payload);
+        expect(res1.statusCode).toBe(201);
+        expect(res1.body.status).toBe('queued');
+
+        // Duplicate submission
+        const res2 = await request(app).post('/emit').send(payload);
+        expect(res2.statusCode).toBe(200);
+        expect(res2.body.status).toBe('duplicate_acknowledged');
+
+        const db = getDb();
+        const count = await db.get("SELECT COUNT(*) as c FROM webhooks WHERE id = 'hook-dupe'");
+        expect(count.c).toBe(1); // Only 1 record created
+    });
+
+    it('should retry on failure and eventually move to DLQ', async () => {
+        const id = 'hook-fail';
+        await request(app).post('/emit').send({
+            id,
+            endpoint: `${baseUrl}/mock-receiver`,
+            secret: 'test-secret',
+            payload: { simulateFailure: true } // instructs simulator to return 500
+        });
+
+        // 1st attempt
+        await processWebhooks();
+        let status = await request(app).get(`/status/${id}`);
+        expect(status.body.status).toBe('retrying');
+        expect(status.body.attempts).toBe(1);
+        
+        // Emulate time passing to bypass backoff for testing (update next_attempt)
+        const db = getDb();
+        
+        // 2nd attempt
+        await db.run("UPDATE webhooks SET next_attempt = datetime('now', '-1 day') WHERE id = ?", [id]);
+        await processWebhooks();
+        
+        // 3rd attempt
+        await db.run("UPDATE webhooks SET next_attempt = datetime('now', '-1 day') WHERE id = ?", [id]);
+        await processWebhooks();
+        
+        // 4th attempt
+        await db.run("UPDATE webhooks SET next_attempt = datetime('now', '-1 day') WHERE id = ?", [id]);
+        await processWebhooks();
+        
+        // 5th attempt (Final)
+        await db.run("UPDATE webhooks SET next_attempt = datetime('now', '-1 day') WHERE id = ?", [id]);
+        await processWebhooks();
+
+        status = await request(app).get(`/status/${id}`);
+        expect(status.body.status).toBe('dlq');
+        expect(status.body.attempts).toBe(5);
+        expect(status.body.error_log).toContain('Request failed with status code 500');
     });
 });
