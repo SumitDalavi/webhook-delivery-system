@@ -1,6 +1,9 @@
+> **NOTE:** This repository is an archival lab or partial prototype. It is not actively maintained and should not be used as a reference for production-grade deployments or performance benchmarks.
+
+
 # Webhook Delivery System 🪝
 
-> **Maturity:** Partial Prototype
+> **Maturity:** Functional Prototype
 > _Reliable webhook dispatcher with exponential backoff, retry queues, and HMAC signature validation._
 
 ## The Problem
@@ -11,7 +14,7 @@ Downstream third-party servers often fail, leading to silent data loss.
 Instead of Redis, it uses an embedded SQLite-backed state machine to track delivery attempts, ensuring absolute delivery persistence. Simple CRUD applications fail when subjected to high throughput, race conditions, or massive data sets.
 
 ## The Solution
-This project implements a production-grade microservice architecture designed to handle these specific edge cases. By utilizing advanced paradigms like idempotency keys, advisory locks, or optimized caching layers, this service guarantees data integrity under load.
+This project implements a robust microservice architecture designed to handle these specific edge cases. By utilizing advanced paradigms like idempotency keys, advisory locks, or optimized caching layers, this service guarantees data integrity under load.
 
 ```text
 ┌──────────────┐      ┌───────────────┐      ┌───────────────┐
@@ -70,7 +73,7 @@ curl -X POST http://localhost:8080/api/trigger -H "Content-Type: application/jso
 [GitHub](https://github.com/SumitDalavi) | [LinkedIn](https://in.linkedin.com/in/sumit-dalavi-762838129)
 
 ---
-*Built with a focus on production-grade patterns, not toy demos.*
+*Built with a focus on robust patterns, not toy demos.*
 
 
 ---
@@ -89,3 +92,6 @@ curl -X POST http://localhost:8080/api/trigger -H "Content-Type: application/jso
 - [Runbook](docs/runbook.md) — Setup, commands, and expected outputs
 - [Decisions](docs/decisions.md) — ADRs for message broker selection
 - [Changelog](docs/changelog.md) — Change history
+
+## Known Limitations
+- **Persistence**: Worker boundaries and persistence are currently simulated in-memory.
