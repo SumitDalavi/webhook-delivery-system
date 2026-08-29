@@ -1,6 +1,7 @@
 # Webhook Delivery System 🪝
 
-> Reliable webhook dispatcher with exponential backoff, retry queues, and HMAC signature validation.
+> **Maturity:** Partial Prototype
+> _Reliable webhook dispatcher with exponential backoff, retry queues, and HMAC signature validation._
 
 ## The Problem
 ## Problem Statement
@@ -74,40 +75,17 @@ curl -X POST http://localhost:8080/api/trigger -H "Content-Type: application/jso
 
 ---
 
-## 3. 🔬 Evidence & Benchmarks (Audit Added)
+## Mock Boundaries (Honest Scope)
 
-This project has been explicitly designed as an **independent microservice**. It does not rely on heavy external databases (like Redis, Postgres, or Kafka), allowing for immediate, deterministic local execution and verification.
+| What | Status | Details |
+|---|---|---|
+| Task Broker | **Real** | Uses BullMQ over a real Redis instance for durable queuing. |
+| Dispatcher Worker | **Real** | Executes HTTP calls with exponential backoff. |
+| Receiver | **Simulated** | A local express endpoint acts as the webhook sink for tests. |
 
-### Test Verification
-The integration test suite validates the core functionality, failure handling, and state machine transitions entirely locally.
+## 📚 Documentation
 
-**Run the test suite:**
-```bash
-npm install
-npm run test
-```
-
-### Performance Benchmarks
-- **Throughput/Latency:** Dispatcher throughput: 100 requests/sec
-- **Storage Profile:** Embedded SQLite / In-Memory Maps ensure zero network hop overhead for state retrieval.
-
----
-
-## 4. Constraints & Threat Model (Audit Added)
-
-### Known Limitations
-- **Single-Node Design:** This prototype uses embedded databases to simplify the infrastructure footprint for verification. To horizontally scale across multiple pods in a real Kubernetes environment, the SQLite logic would need to be swapped for a distributed store (e.g., PostgreSQL, Redis).
-- **In-Memory Volatility:** Where `LRU Cache` or `Map` structures are used without WAL backing, process crashes result in cache wipes (though core state remains durable in SQLite).
-
-### Threat Model Considerations
-- Malicious downstream receivers could tarpit the connection.
-- **Authentication:** Currently runs in a trusted local execution environment without explicit TLS termination.
-
----
-
-## 5. Mock Boundaries (Audit Compliance)
-
-To comply with strict portfolio audit requirements, we explicitly define the boundaries of what is real vs. simulated:
-
-- **Fully Implemented:** The core state machine, API routes, database schemas, and integration tests are real and fully functional.
-- **Mocked / Demo Mode:** External receivers are mocked during tests.
+- [Architecture](docs/ARCHITECTURE.md) — System diagram and component details
+- [Runbook](docs/runbook.md) — Setup, commands, and expected outputs
+- [Decisions](docs/decisions.md) — ADRs for message broker selection
+- [Changelog](docs/changelog.md) — Change history
