@@ -3,6 +3,9 @@
 
 # Webhook Delivery System 🪝
 
+[![Release](https://img.shields.io/github/v/release/SumitDalavi/webhook-delivery-system?color=blue&logo=github)](https://github.com/SumitDalavi/webhook-delivery-system/releases)
+[![SBOM](https://img.shields.io/badge/SBOM-SPDX%20JSON-blueviolet?logo=spdx)](https://github.com/SumitDalavi/webhook-delivery-system/releases)
+
 > **Maturity:** Functional Prototype
 > _Reliable webhook dispatcher with exponential backoff, retry queues, and HMAC signature validation._
 
@@ -95,3 +98,24 @@ curl -X POST http://localhost:8080/api/trigger -H "Content-Type: application/jso
 
 ## Known Limitations
 - **Persistence**: Worker boundaries and persistence are currently simulated in-memory.
+
+## Release & Verification
+
+The project includes an automated DevSecOps release pipeline (`.github/workflows/release.yml`) triggered on semantic version tags (`v*.*.*`).
+
+Each release automatically:
+1. Executes test suite gates.
+2. Builds the container image.
+3. Performs vulnerability scanning via Trivy.
+4. Generates an SPDX SBOM (`sbom.spdx.json`) using Anchore Syft.
+5. Publishes a GitHub Release with attached SBOM.
+
+### Verifying the Release
+```bash
+# Verify release via GitHub CLI
+gh release view v0.1.0 --repo SumitDalavi/webhook-delivery-system
+
+# Download and inspect SBOM
+gh release download v0.1.0 --repo SumitDalavi/webhook-delivery-system --pattern "sbom.spdx.json"
+cat sbom.spdx.json | jq .
+```
