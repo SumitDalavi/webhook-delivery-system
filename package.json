@@ -1,6 +1,6 @@
 {
   "name": "webhook-delivery-system",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "Webhook Delivery System",
   "main": "index.js",
   "scripts": {
