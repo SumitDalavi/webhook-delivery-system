@@ -1,14 +1,14 @@
 > **NOTE:** This repository is an archival lab or partial prototype. It is not actively maintained and should not be used as a reference for production-grade deployments or performance benchmarks.
 
-
 # Webhook Delivery System 🪝
 
-[![Release](https://img.shields.io/github/v/release/SumitDalavi/webhook-delivery-system?color=blue&logo=github)](https://github.com/SumitDalavi/webhook-delivery-system/releases)
+[![CI Pipeline](https://github.com/SumitDalavi/webhook-delivery-system/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/SumitDalavi/webhook-delivery-system/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/SumitDalavi/webhook-delivery-system?color=0969da&label=release&logo=github)](https://github.com/SumitDalavi/webhook-delivery-system/releases)
 [![Release Workflow](https://github.com/SumitDalavi/webhook-delivery-system/actions/workflows/release.yml/badge.svg)](https://github.com/SumitDalavi/webhook-delivery-system/actions/workflows/release.yml)
-[![SBOM](https://img.shields.io/badge/SBOM-SPDX%20JSON-blueviolet?logo=spdx)](https://github.com/SumitDalavi/webhook-delivery-system/releases)
-
-[![Release](https://img.shields.io/github/v/release/SumitDalavi/webhook-delivery-system?color=blue&logo=github)](https://github.com/SumitDalavi/webhook-delivery-system/releases)
-[![SBOM](https://img.shields.io/badge/SBOM-SPDX%20JSON-blueviolet?logo=spdx)](https://github.com/SumitDalavi/webhook-delivery-system/releases)
+[![GHCR Container](https://img.shields.io/badge/ghcr.io-v0.2.0-blue?logo=docker&logoColor=white)](https://github.com/SumitDalavi/webhook-delivery-system/pkgs/container/webhook-delivery-system)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org)
+[![SBOM](https://img.shields.io/badge/SBOM-SPDX%202.3-blueviolet?logo=spdx)](https://github.com/SumitDalavi/webhook-delivery-system/releases/tag/v0.2.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 > **Maturity:** Functional Prototype
 > _Reliable webhook dispatcher with exponential backoff, retry queues, and HMAC signature validation._
@@ -81,7 +81,6 @@ curl -X POST http://localhost:8080/api/trigger -H "Content-Type: application/jso
 
 ---
 *Built with a focus on robust patterns, not toy demos.*
-
 
 ---
 
