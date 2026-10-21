@@ -11,14 +11,10 @@
 > Reliable webhook dispatcher with exponential backoff, retry queues, and HMAC signature validation.
 
 ## The Problem
-## Problem Statement
-Downstream third-party servers often fail, leading to silent data loss.
+Downstream third-party webhook receivers often experience transient downtime, network timeouts, or rate limits, leading to silent data loss if deliveries are not reliably queued and retried.
 
 ## Architecture & Solution
-Instead of Redis, it uses an embedded SQLite-backed state machine to track delivery attempts, ensuring absolute delivery persistence. Simple CRUD applications fail when subjected to high throughput, race conditions, or massive data sets.
-
-## The Solution
-This project implements a robust microservice architecture designed to handle these specific edge cases. By utilizing advanced paradigms like idempotency keys, advisory locks, or optimized caching layers, this service guarantees data integrity under load.
+This system provides reliable webhook delivery with exponential backoff, dead-letter queues, and HMAC-SHA256 signature verification. Delivery state is tracked persistingly to guarantee delivery integrity under transient failure conditions.
 
 ```text
 ┌──────────────┐      ┌───────────────┐      ┌───────────────┐
