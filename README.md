@@ -8,8 +8,7 @@
 [![SBOM](https://img.shields.io/badge/SBOM-SPDX%202.3-blueviolet?logo=spdx)](https://github.com/SumitDalavi/webhook-delivery-system/releases/tag/v0.2.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-> **Maturity:** Functional Prototype
-> _Reliable webhook dispatcher with exponential backoff, retry queues, and HMAC signature validation._
+> Reliable webhook dispatcher with exponential backoff, retry queues, and HMAC signature validation.
 
 ## The Problem
 ## Problem Statement
